@@ -24,7 +24,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "static",
+      "name": "PeriodFLO - Cycle Intelligence & Partner Sync",
+      "shortName": "PeriodFLO",
+      "backgroundColor": "#FDFBF7",
+      "themeColor": "#E07A5F",
+      "display": "standalone",
+      "orientation": "portrait",
+      "scope": "/",
+      "startUrl": "/"
     },
     "plugins": [
       "expo-router"

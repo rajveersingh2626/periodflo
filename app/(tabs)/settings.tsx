@@ -21,10 +21,13 @@ import {
   Trash2,
   Lock,
   FileText,
+  Smartphone,
 } from 'lucide-react-native';
+import { usePWAInstall } from '../../src/hooks/usePWAInstall';
 
 export default function SettingsScreen() {
   const [isLockEnabled, setIsLockEnabled] = useState(AppLockService.isLockEnabled());
+  const { isInstallable, isStandalone, promptInstall } = usePWAInstall();
 
   const handleToggleLock = () => {
     if (isLockEnabled) {
@@ -115,6 +118,32 @@ export default function SettingsScreen() {
               trackColor={{ false: '#E8E4DE', true: Colors.light.terracotta }}
             />
           </View>
+        </View>
+
+        {/* PWA App Installation */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.iconCircle, { backgroundColor: '#FDF1E8' }]}>
+              <Smartphone size={18} color={Colors.light.terracotta} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.cardTitle}>INSTALL AS STANDALONE APP</Text>
+              <Text style={styles.cardDesc}>
+                {isStandalone
+                  ? 'Running as installed standalone PWA'
+                  : 'Install to Home Screen or Dock for full offline access'}
+              </Text>
+            </View>
+          </View>
+          {!isStandalone && (
+            <TactileButton
+              title={isInstallable ? 'Install PeriodFLO to Device' : 'Installed / Ready in Browser'}
+              variant="outline"
+              disabled={!isInstallable}
+              onPress={promptInstall}
+              style={{ marginTop: 12 }}
+            />
+          )}
         </View>
 
         {/* Data Migration Engine */}

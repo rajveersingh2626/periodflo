@@ -1,0 +1,40 @@
+{
+  "name": "PeriodFLO - Cycle Intelligence & Partner Sync",
+  "short_name": "PeriodFLO",
+  "description": "Privacy-first cross-platform menstrual cycle tracking, predictive health analytics, and partner sync.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDFBF7",
+  "theme_color": "#E07A5F",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "lifestyle", "medical"],
+  "shortcuts": [
+    {
+      "name": "Daily Check-in",
+      "short_name": "Check-in",
+      "description": "Quickly log today's flow, symptoms, and mood",
+      "url": "/?action=log"
+    },
+    {
+      "name": "Partner View",
+      "short_name": "Partner",
+      "description": "Check current cycle status and support tips",
+      "url": "/partner"
+    }
+  ]
+}

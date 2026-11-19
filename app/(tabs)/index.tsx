@@ -10,6 +10,7 @@ import { PredictiveEngine } from '../../src/services/predictions/engine';
 import { dbService } from '../../src/services/storage/db';
 import { PlusCircle, Users } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { PWAInstallBanner } from '../../src/components/ui/PWAInstallBanner';
 
 export default function CycleHomeScreen() {
   const router = useRouter();
@@ -97,6 +98,9 @@ export default function CycleHomeScreen() {
             textStyle={styles.partnerBtnText}
           />
         </View>
+
+        {/* PWA Install Banner (Web Only) */}
+        <PWAInstallBanner />
 
         {/* Phase Ring Hero */}
         <PhaseRing
