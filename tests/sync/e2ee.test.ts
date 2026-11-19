@@ -31,7 +31,7 @@ describe('Zero-Knowledge E2EE Sync Protocol', () => {
       phase: 'ovulatory' as const,
       countdownDays: 14,
       energyForecast: 'Peak Energy',
-      symptoms: ['cramps'],
+      symptoms: ['cramps' as const],
       detailedNotes: 'Private gynecologist appointment details',
       sexualActivity: 'Active',
     };

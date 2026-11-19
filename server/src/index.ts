@@ -82,11 +82,11 @@ export class RelayServer {
 
   private cleanExpired(): void {
     const now = Date.now();
-    for (const [code, entry] of this.rendezvousMap.entries()) {
+    this.rendezvousMap.forEach((entry, code) => {
       if (now > entry.expiresAt) {
         this.rendezvousMap.delete(code);
       }
-    }
+    });
   }
 }
 
