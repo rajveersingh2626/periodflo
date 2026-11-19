@@ -26,14 +26,19 @@ describe('Relay Server (Blind Ephemeral Mailbox)', () => {
   });
 
   it('should prevent brute force with max 3 attempts', () => {
-    const code = 'BRUTE1';
-    relay.registerRendezvous(code, { mailboxId: 'b', publicKey: 'p' });
+    const clientId = 'test-ip';
 
-    expect(relay.checkAttempt('WRONG1')).toBe(false);
-    expect(relay.checkAttempt('WRONG2')).toBe(false);
-    expect(relay.checkAttempt('WRONG3')).toBe(false);
-    // 4th attempt is rate-limited / blocked
-    expect(relay.checkAttempt('WRONG4')).toBe(false);
+    expect(relay.isRateLimited(clientId)).toBe(false);
+    relay.recordFailedAttempt(clientId);
+
+    expect(relay.isRateLimited(clientId)).toBe(false);
+    relay.recordFailedAttempt(clientId);
+
+    expect(relay.isRateLimited(clientId)).toBe(false);
+    relay.recordFailedAttempt(clientId);
+
+    // 4th attempt is rate-limited
+    expect(relay.isRateLimited(clientId)).toBe(true);
   });
 
   it('should store and read blind ciphertext in mailbox', () => {

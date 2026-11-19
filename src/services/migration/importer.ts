@@ -70,7 +70,7 @@ export class MigrationService {
 
     // Calculate cycle lengths if missing
     for (let i = 0; i < cycles.length - 1; i++) {
-      if (!cycles[i].cycleLengthDays) {
+      if (!cycles[i + 1].cycleLengthDays) {
         const currentStart = new Date(cycles[i].startDate).getTime();
         const previousStart = new Date(cycles[i + 1].startDate).getTime();
         const diffDays = Math.round((currentStart - previousStart) / 86400000);

@@ -63,4 +63,6 @@ export interface CyclePrediction {
   currentCycleDay: number;
   currentPhase: CyclePhase;
   daysUntilNextPeriod: number;
+  isOverdue?: boolean;
+  daysLate?: number;
 }

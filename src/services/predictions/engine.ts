@@ -106,7 +106,10 @@ export class PredictiveEngine {
       ovulationCycleDay
     );
 
-    const daysUntilNextPeriod = Math.max(0, this.diffDays(asOfDateStr, predictedPeriodStart));
+    const rawDaysUntil = this.diffDays(asOfDateStr, predictedPeriodStart);
+    const isOverdue = rawDaysUntil < 0;
+    const daysLate = isOverdue ? Math.abs(rawDaysUntil) : 0;
+    const daysUntilNextPeriod = Math.max(0, rawDaysUntil);
 
     return {
       predictedPeriodStart,
@@ -118,6 +121,8 @@ export class PredictiveEngine {
       currentCycleDay,
       currentPhase,
       daysUntilNextPeriod,
+      isOverdue,
+      daysLate,
     };
   }
 }

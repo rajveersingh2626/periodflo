@@ -8,12 +8,16 @@ interface PhaseRingProps {
   cycleDay: number;
   phase: CyclePhase;
   daysUntilNextPeriod: number;
+  isOverdue?: boolean;
+  daysLate?: number;
 }
 
 export const PhaseRing: React.FC<PhaseRingProps> = ({
   cycleDay,
   phase,
   daysUntilNextPeriod,
+  isOverdue = false,
+  daysLate = 0,
 }) => {
   const metadata = PhaseHelper.getPhaseMetadata(phase);
 
@@ -30,6 +34,16 @@ export const PhaseRing: React.FC<PhaseRingProps> = ({
     }
   };
 
+  const getCountdownLabel = () => {
+    if (isOverdue && daysLate > 0) {
+      return `Period is ~${daysLate} ${daysLate === 1 ? 'day' : 'days'} late`;
+    }
+    if (daysUntilNextPeriod === 0) {
+      return 'Period expected today';
+    }
+    return `Next period in ~${daysUntilNextPeriod} days`;
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.outerRing, { borderColor: getPhaseColor() }]}>
@@ -40,11 +54,9 @@ export const PhaseRing: React.FC<PhaseRingProps> = ({
         </View>
       </View>
       <Text style={styles.subtitle}>{metadata.subtitle}</Text>
-      <View style={styles.countdownBadge}>
-        <Text style={styles.countdownText}>
-          {daysUntilNextPeriod === 0
-            ? 'Period expected today'
-            : `Next period in ~${daysUntilNextPeriod} days`}
+      <View style={[styles.countdownBadge, isOverdue && { borderColor: Colors.light.warning, backgroundColor: '#FDF2F0' }]}>
+        <Text style={[styles.countdownText, isOverdue && { color: Colors.light.warning }]}>
+          {getCountdownLabel()}
         </Text>
       </View>
     </View>

@@ -24,7 +24,7 @@ export default function PartnerModeScreen() {
   const router = useRouter();
 
   // Primary user sharing settings state
-  const [pairingCode] = useState('7K9X2P');
+  const [pairingCode, setPairingCode] = useState('7K9X2P');
   const [isSharingModalOpen, setIsSharingModalOpen] = useState(false);
   const [permissions, setPermissions] = useState<SharedPermissions>({
     sharePhase: true,
@@ -39,20 +39,35 @@ export default function PartnerModeScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [scheduledAlerts, setScheduledAlerts] = useState<DiscreetAlert[]>([]);
 
-  // Simulated live E2EE decrypted payload for partner view
-  const [partnerPayload, setPartnerPayload] = useState<PartnerPayload>({
+  // Raw decrypted payload (simulated client state)
+  const rawDecryptedPayload = {
     cycleDay: 22,
-    phase: 'luteal',
+    phase: 'luteal' as const,
     countdownDays: 6,
     energyForecast: 'Gentle, introspective energy',
-    symptoms: ['cramps', 'fatigue'],
+    symptoms: ['cramps' as const, 'fatigue' as const],
     empathyTip:
       'Her progesterone is peaking. Keep dinner simple, offer a cozy night in, and run a warm bath or prepare a heating pad unprompted.',
-    updatedAt: new Date().toISOString(),
-  });
+  };
+
+  // Strictly filtered by primary user permissions
+  const partnerPayload: PartnerPayload = E2EESyncService.filterPayloadByPermissions(
+    rawDecryptedPayload,
+    permissions
+  );
 
   useEffect(() => {
-    // Schedule discreet local notifications for the partner
+    // Register pairing code on rendezvous server for demo / live pairing
+    const keyPair = E2EESyncService.generateKeyPair();
+    const pkg = PairingService.createPairingPackage(keyPair);
+    setPairingCode(pkg.code);
+    relayServer.registerRendezvous(pkg.code, {
+      mailboxId: pkg.mailboxId,
+      publicKey: pkg.publicKey,
+    });
+  }, []);
+
+  useEffect(() => {
     if (notificationsEnabled) {
       const alerts = LocalNotificationScheduler.calculateDiscreetAlerts(partnerPayload);
       setScheduledAlerts(alerts);
@@ -62,11 +77,23 @@ export default function PartnerModeScreen() {
   }, [partnerPayload, notificationsEnabled]);
 
   const handlePairSubmit = () => {
-    if (inputCode.trim().length !== 6) {
+    const code = inputCode.trim().toUpperCase();
+    if (code.length !== 6) {
       Alert.alert('Invalid Code', 'Please enter a valid 6-character pairing code.');
       return;
     }
+
+    const claimed = relayServer.claimRendezvous(code);
+    if (!claimed) {
+      Alert.alert(
+        'Pairing Failed',
+        'Invite code not found, expired, or already claimed. Please generate a new code.'
+      );
+      return;
+    }
+
     setIsPaired(true);
+    Alert.alert('Connected', 'End-to-end encrypted partner channel established!');
   };
 
   return (
@@ -124,7 +151,7 @@ export default function PartnerModeScreen() {
 
             <EmpathyCard
               tip={partnerPayload.empathyTip}
-              symptoms={permissions.shareSymptoms ? partnerPayload.symptoms : []}
+              symptoms={partnerPayload.symptoms || []}
             />
 
             {/* Discreet Alerts Card */}

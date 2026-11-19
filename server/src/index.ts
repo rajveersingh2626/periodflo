@@ -1,3 +1,5 @@
+import { Hono } from 'hono';
+
 export interface RendezvousEntry {
   mailboxId: string;
   publicKey: string;
@@ -49,15 +51,19 @@ export class RelayServer {
   }
 
   /**
-   * Rate limiting throttle: max 3 failed attempts
+   * Checks if a client is rate limited (3 or more failed attempts)
    */
-  public checkAttempt(clientIdentifier: string): boolean {
+  public isRateLimited(clientIdentifier: string): boolean {
     const current = this.attemptCounts.get(clientIdentifier) || 0;
-    if (current >= 3) {
-      return false; // Rate-limited
-    }
+    return current >= 3;
+  }
+
+  /**
+   * Records a failed pairing attempt for rate limiting
+   */
+  public recordFailedAttempt(clientIdentifier: string): void {
+    const current = this.attemptCounts.get(clientIdentifier) || 0;
     this.attemptCounts.set(clientIdentifier, current + 1);
-    return false;
   }
 
   /**
@@ -85,3 +91,72 @@ export class RelayServer {
 }
 
 export const relayServer = new RelayServer();
+
+/**
+ * Creates and configures the Hono HTTP Server for Cloudflare Workers / Node.js
+ */
+export function createRelayApp(serverInstance: RelayServer = relayServer): Hono {
+  const app = new Hono();
+
+  // Register ephemeral rendezvous
+  app.post('/rendezvous', async (c) => {
+    try {
+      const body = await c.req.json();
+      if (!body.code || !body.mailboxId || !body.publicKey) {
+        return c.json({ error: 'Missing code, mailboxId, or publicKey' }, 400);
+      }
+      serverInstance.registerRendezvous(body.code, {
+        mailboxId: body.mailboxId,
+        publicKey: body.publicKey,
+      });
+      return c.json({ success: true, ttlMinutes: 10 });
+    } catch {
+      return c.json({ error: 'Invalid JSON payload' }, 400);
+    }
+  });
+
+  // Claim rendezvous pairing code
+  app.get('/rendezvous/:code', (c) => {
+    const code = c.req.param('code');
+    const clientId = c.req.header('x-forwarded-for') || 'local-client';
+
+    if (serverInstance.isRateLimited(clientId)) {
+      return c.json({ error: 'Too many failed pairing attempts. Please wait.' }, 429);
+    }
+
+    const claimed = serverInstance.claimRendezvous(code);
+    if (!claimed) {
+      serverInstance.recordFailedAttempt(clientId);
+      return c.json({ error: 'Code not found, expired, or already claimed.' }, 404);
+    }
+
+    return c.json(claimed);
+  });
+
+  // Post blind ciphertext to mailbox
+  app.post('/mailbox/:id', async (c) => {
+    const mailboxId = c.req.param('id');
+    try {
+      const body = await c.req.json();
+      if (!body.ciphertext) {
+        return c.json({ error: 'Missing ciphertext blob' }, 400);
+      }
+      serverInstance.postMailbox(mailboxId, body.ciphertext);
+      return c.json({ success: true });
+    } catch {
+      return c.json({ error: 'Invalid payload' }, 400);
+    }
+  });
+
+  // Get blind ciphertext from mailbox
+  app.get('/mailbox/:id', (c) => {
+    const mailboxId = c.req.param('id');
+    const blob = serverInstance.getMailbox(mailboxId);
+    if (!blob) {
+      return c.json({ error: 'Mailbox empty or not found' }, 404);
+    }
+    return c.json({ ciphertext: blob });
+  });
+
+  return app;
+}

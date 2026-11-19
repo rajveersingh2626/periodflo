@@ -1,30 +1,42 @@
 import { PeriodCycle, DailyLog, FlowIntensity } from '../../types/cycle';
+import { DateHelper } from './dateHelper';
 
 export class AppleHealthParser {
   public static parseXml(content: string): { cycles: PeriodCycle[]; logs: DailyLog[] } {
-    const recordRegex =
-      /<Record[^>]*type="HKCategoryTypeIdentifierMenstrualFlow"[^>]*startDate="([^"\s]+)[^"]*"[^>]*value="([^"]+)"/g;
-
     const datesMap = new Map<string, FlowIntensity>();
-    let match: RegExpExecArray | null;
 
-    while ((match = recordRegex.exec(content)) !== null) {
-      const dateStr = match[1]; // e.g. 2026-08-01
-      const rawVal = match[2]; // e.g. HKCategoryValueMenstrualFlowMedium
+    // Match individual <Record ... /> elements
+    const tagRegex = /<Record\s+([^>]+)\/>/gi;
+    let tagMatch: RegExpExecArray | null;
 
-      let flow: FlowIntensity = 'medium';
-      if (rawVal.includes('Light') || rawVal.includes('Unspecified')) flow = 'light';
-      else if (rawVal.includes('Heavy')) flow = 'heavy';
-      else if (rawVal.includes('Medium')) flow = 'medium';
+    while ((tagMatch = tagRegex.exec(content)) !== null) {
+      const attributesStr = tagMatch[1];
+      if (!attributesStr.includes('HKCategoryTypeIdentifierMenstrualFlow')) {
+        continue;
+      }
 
-      datesMap.set(dateStr, flow);
+      // Extract attributes independently of their sequence
+      const startDateMatch = attributesStr.match(/startDate="([^"\s]+)[^"]*"/i);
+      const valueMatch = attributesStr.match(/value="([^"]+)"/i);
+
+      if (startDateMatch && valueMatch) {
+        const rawDate = startDateMatch[1];
+        const dateStr = DateHelper.normalizeToISO(rawDate);
+        const rawVal = valueMatch[1];
+
+        let flow: FlowIntensity = 'medium';
+        if (rawVal.includes('Light') || rawVal.includes('Unspecified')) flow = 'light';
+        else if (rawVal.includes('Heavy')) flow = 'heavy';
+        else if (rawVal.includes('Medium')) flow = 'medium';
+
+        datesMap.set(dateStr, flow);
+      }
     }
 
     const sortedDates = Array.from(datesMap.keys()).sort();
     const cycles: PeriodCycle[] = [];
     const logs: DailyLog[] = [];
 
-    // Group dates into periods (consecutive days or gap <= 2 days)
     let currentPeriod: string[] = [];
 
     for (const d of sortedDates) {
@@ -40,24 +52,18 @@ export class AppleHealthParser {
         currentPeriod.push(d);
       } else {
         const lastDate = currentPeriod[currentPeriod.length - 1];
-        const diffDays = Math.round(
-          (new Date(d).getTime() - new Date(lastDate).getTime()) / 86400000
-        );
+        const diffDays = DateHelper.diffDays(lastDate, d);
 
         if (diffDays <= 2) {
           currentPeriod.push(d);
         } else {
-          // Finish previous period
           const start = currentPeriod[0];
           const end = currentPeriod[currentPeriod.length - 1];
           cycles.push({
             id: `apple-c-${start}`,
             startDate: start,
             endDate: end,
-            periodLengthDays: Math.max(
-              1,
-              Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1
-            ),
+            periodLengthDays: Math.max(1, DateHelper.diffDays(start, end) + 1),
           });
           currentPeriod = [d];
         }
@@ -71,10 +77,7 @@ export class AppleHealthParser {
         id: `apple-c-${start}`,
         startDate: start,
         endDate: end,
-        periodLengthDays: Math.max(
-          1,
-          Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1
-        ),
+        periodLengthDays: Math.max(1, DateHelper.diffDays(start, end) + 1),
       });
     }
 
