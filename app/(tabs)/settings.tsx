@@ -22,12 +22,17 @@ import {
   Lock,
   FileText,
   Smartphone,
+  Users,
+  UserCheck,
 } from 'lucide-react-native';
 import { usePWAInstall } from '../../src/hooks/usePWAInstall';
+import { AccountSwitcherModal } from '../../src/components/account/AccountSwitcherModal';
 
 export default function SettingsScreen() {
   const [isLockEnabled, setIsLockEnabled] = useState(AppLockService.isLockEnabled());
   const { isInstallable, isStandalone, promptInstall } = usePWAInstall();
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [activeProfile, setActiveProfile] = useState(() => dbService.getUserProfile());
 
   const handleToggleLock = () => {
     if (isLockEnabled) {
@@ -108,6 +113,33 @@ export default function SettingsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Privacy & Settings</Text>
           <Text style={styles.subtitle}>Zero trackers. Sovereign health data control.</Text>
+        </View>
+
+        {/* Active Account Profile & Switcher */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.iconCircle, { backgroundColor: '#FFF2EE' }]}>
+              <Text style={{ fontSize: 18 }}>{activeProfile.avatar || '🌸'}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.cardTitle}>ACTIVE ACCOUNT PROFILE</Text>
+              <Text style={[styles.cardDesc, { fontWeight: '700', color: Colors.light.textPrimary }]}>
+                {activeProfile.name}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.infoText}>
+            {activeProfile.id === 'suhani'
+              ? "Currently using Suhani's verified 4-year cycle dataset (47 historical cycles)."
+              : "Currently using your private personal profile with sovereign encrypted storage."}
+          </Text>
+          <TactileButton
+            title="Switch or Manage Accounts"
+            variant="outline"
+            icon={<Users size={16} color={Colors.light.terracotta} />}
+            onPress={() => setIsAccountModalOpen(true)}
+            style={{ marginTop: 10 }}
+          />
         </View>
 
         {/* Security & App Lock */}
@@ -243,6 +275,13 @@ export default function SettingsScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Account & Profile Switcher Modal */}
+      <AccountSwitcherModal
+        visible={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        onProfileChanged={() => setActiveProfile(dbService.getUserProfile())}
+      />
     </SafeAreaView>
   );
 }

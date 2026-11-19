@@ -7,7 +7,7 @@ describe('DatabaseService (Encrypted Local Storage)', () => {
 
   beforeEach(async () => {
     db = new DatabaseService();
-    await db.initialize(':memory:');
+    await db.wipeDatabase();
   });
 
   it('should save and retrieve period cycles ordered by startDate descending', async () => {

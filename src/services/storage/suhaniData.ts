@@ -1,7 +1,9 @@
 import { PeriodCycle, DailyLog, CycleBaseline } from '../../types/cycle';
 
 export interface UserProfile {
+  id: string;
   name: string;
+  avatar?: string;
   averageCycleLengthDays: number;
   averagePeriodLengthDays: number;
   estimatedLutealPhaseDays: number;
@@ -9,11 +11,23 @@ export interface UserProfile {
 }
 
 export const SUHANI_PROFILE: UserProfile = {
+  id: "suhani",
   name: "Suhani",
+  avatar: "🌸",
   averageCycleLengthDays: 30,
   averagePeriodLengthDays: 4,
   estimatedLutealPhaseDays: 14,
   isCustomized: true,
+};
+
+export const DEFAULT_PERSONAL_PROFILE: UserProfile = {
+  id: "personal",
+  name: "My Account",
+  avatar: "🌿",
+  averageCycleLengthDays: 28,
+  averagePeriodLengthDays: 5,
+  estimatedLutealPhaseDays: 14,
+  isCustomized: false,
 };
 
 export const SUHANI_CYCLES: PeriodCycle[] = [

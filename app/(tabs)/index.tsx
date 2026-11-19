@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Colors } from '../../src/theme/colors';
 import { PhaseRing } from '../../src/components/calendar/PhaseRing';
 import { CalendarGrid } from '../../src/components/calendar/CalendarGrid';
@@ -9,9 +9,11 @@ import { PeriodCycle, DailyLog, CyclePrediction } from '../../src/types/cycle';
 import { PredictiveEngine } from '../../src/services/predictions/engine';
 import { dbService } from '../../src/services/storage/db';
 import { SUHANI_CYCLES } from '../../src/services/storage/suhaniData';
-import { PlusCircle, Users } from 'lucide-react-native';
+import { PlusCircle, Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { PWAInstallBanner } from '../../src/components/ui/PWAInstallBanner';
+import { AccountSwitcherModal } from '../../src/components/account/AccountSwitcherModal';
+import { WelcomeLoginScreen } from '../../src/components/account/WelcomeLoginScreen';
 
 export default function CycleHomeScreen() {
   const router = useRouter();
@@ -27,16 +29,34 @@ export default function CycleHomeScreen() {
   );
   const [activeLog, setActiveLog] = useState<DailyLog | null>(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => dbService.isLoggedIn());
+  const [activeProfile, setActiveProfile] = useState(() => dbService.getUserProfile());
 
   useEffect(() => {
     loadData();
   }, [selectedDate]);
 
   const loadData = async () => {
+    setIsLoggedIn(dbService.isLoggedIn());
+    const profile = dbService.getUserProfile();
+    setActiveProfile(profile);
+
     let loadedCycles = await dbService.getCycles();
     if (loadedCycles.length === 0) {
-      await dbService.seedSuhaniData();
-      loadedCycles = await dbService.getCycles();
+      if (profile.id === 'suhani') {
+        await dbService.seedSuhaniData();
+        loadedCycles = await dbService.getCycles();
+      } else {
+        const starter: PeriodCycle = {
+          id: `cycle-${selectedDate}`,
+          startDate: selectedDate,
+          endDate: selectedDate,
+          periodLengthDays: profile.averagePeriodLengthDays || 5,
+        };
+        await dbService.saveCycle(starter);
+        loadedCycles = [starter];
+      }
     }
     setCycles(loadedCycles);
 
@@ -62,13 +82,29 @@ export default function CycleHomeScreen() {
           id: `cycle-${log.date}`,
           startDate: log.date,
           endDate: log.date,
-          periodLengthDays: 5,
+          periodLengthDays: activeProfile.averagePeriodLengthDays || 5,
         };
         await dbService.saveCycle(newCycle);
         await loadData();
       }
     }
   };
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <WelcomeLoginScreen
+          onLoginSuccess={loadData}
+          onOpenCreate={() => setIsAccountModalOpen(true)}
+        />
+        <AccountSwitcherModal
+          visible={isAccountModalOpen}
+          onClose={() => setIsAccountModalOpen(false)}
+          onProfileChanged={loadData}
+        />
+      </>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -77,7 +113,15 @@ export default function CycleHomeScreen() {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.appName}>PeriodFLO</Text>
-            <Text style={styles.userGreeting}>Welcome, {dbService.getUserProfile().name} 🌸</Text>
+            <TouchableOpacity
+              onPress={() => setIsAccountModalOpen(true)}
+              style={styles.profilePill}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.profileEmoji}>{activeProfile.avatar || '🌸'}</Text>
+              <Text style={styles.profileName}>{activeProfile.name}</Text>
+              <ChevronDown size={14} color={Colors.light.terracotta} style={{ marginLeft: 3 }} />
+            </TouchableOpacity>
             <Text style={styles.dateDisplay}>
               {new Date(selectedDate).toLocaleDateString(undefined, {
                 weekday: 'short',
@@ -144,6 +188,13 @@ export default function CycleHomeScreen() {
         onClose={() => setIsLogModalOpen(false)}
         onSave={handleSaveLog}
       />
+
+      {/* Account & Profile Switcher Modal */}
+      <AccountSwitcherModal
+        visible={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        onProfileChanged={loadData}
+      />
     </SafeAreaView>
   );
 }
@@ -169,6 +220,28 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.light.terracotta,
     letterSpacing: -0.5,
+  },
+  profilePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF2EE',
+    borderWidth: 1,
+    borderColor: '#F8D7CC',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 14,
+    alignSelf: 'flex-start',
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  profileEmoji: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+  profileName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.light.terracotta,
   },
   userGreeting: {
     fontSize: 14,
