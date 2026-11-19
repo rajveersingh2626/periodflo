@@ -1,0 +1,76 @@
+import { PeriodCycle, DailyLog } from '../../types/cycle';
+import { CryptoService } from './crypto';
+
+export class DatabaseService {
+  private masterKey: string;
+  private cyclesStore: Map<string, string> = new Map(); // id -> encrypted JSON
+  private logsStore: Map<string, string> = new Map(); // date -> encrypted JSON
+  private isInitialized = false;
+
+  constructor() {
+    this.masterKey = CryptoService.generateMasterKey();
+  }
+
+  public async initialize(dbPath: string = 'periodflo.db'): Promise<void> {
+    // In-memory or local encrypted database initialization
+    this.isInitialized = true;
+  }
+
+  public setMasterKey(key: string): void {
+    this.masterKey = key;
+  }
+
+  public getMasterKey(): string {
+    return this.masterKey;
+  }
+
+  public async saveCycle(cycle: PeriodCycle): Promise<void> {
+    const serialized = JSON.stringify(cycle);
+    const encrypted = CryptoService.encrypt(serialized, this.masterKey);
+    this.cyclesStore.set(cycle.id, JSON.stringify(encrypted));
+  }
+
+  public async getCycles(): Promise<PeriodCycle[]> {
+    const list: PeriodCycle[] = [];
+    for (const encryptedStr of this.cyclesStore.values()) {
+      const payload = JSON.parse(encryptedStr);
+      const decrypted = CryptoService.decrypt(payload, this.masterKey);
+      list.push(JSON.parse(decrypted));
+    }
+    // Sort descending by startDate
+    return list.sort((a, b) => b.startDate.localeCompare(a.startDate));
+  }
+
+  public async saveDailyLog(log: DailyLog): Promise<void> {
+    const serialized = JSON.stringify(log);
+    const encrypted = CryptoService.encrypt(serialized, this.masterKey);
+    this.logsStore.set(log.date, JSON.stringify(encrypted));
+  }
+
+  public async getDailyLog(date: string): Promise<DailyLog | null> {
+    const encryptedStr = this.logsStore.get(date);
+    if (!encryptedStr) return null;
+    const payload = JSON.parse(encryptedStr);
+    const decrypted = CryptoService.decrypt(payload, this.masterKey);
+    return JSON.parse(decrypted);
+  }
+
+  public async getDailyLogs(): Promise<DailyLog[]> {
+    const list: DailyLog[] = [];
+    for (const encryptedStr of this.logsStore.values()) {
+      const payload = JSON.parse(encryptedStr);
+      const decrypted = CryptoService.decrypt(payload, this.masterKey);
+      list.push(JSON.parse(decrypted));
+    }
+    return list.sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  public async wipeDatabase(): Promise<void> {
+    this.cyclesStore.clear();
+    this.logsStore.clear();
+    // Rotate master key on wipe to ensure cryptographic erasure
+    this.masterKey = CryptoService.generateMasterKey();
+  }
+}
+
+export const dbService = new DatabaseService();
