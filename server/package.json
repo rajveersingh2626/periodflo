@@ -1,0 +1,14 @@
+{
+  "name": "periodflo-relay",
+  "version": "1.0.0",
+  "description": "Zero-Knowledge Blind E2EE Relay Server for PeriodFLO",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "private": true
+}
