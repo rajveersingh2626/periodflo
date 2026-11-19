@@ -3,6 +3,7 @@ import { MigrationFormat, MigrationResult } from './types';
 import { FloParser } from './floParser';
 import { ClueParser } from './clueParser';
 import { AppleHealthParser } from './appleHealthParser';
+import { DeviceBackupParser } from './deviceBackupParser';
 
 export class MigrationService {
   public static detectFormat(content: string): MigrationFormat {
@@ -11,6 +12,14 @@ export class MigrationService {
       return 'apple_health_xml';
     }
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      if (
+        trimmed.includes('cycleList') ||
+        trimmed.includes('cycleStartDate') ||
+        trimmed.includes('entrydatekey') ||
+        trimmed.includes('dayEntries')
+      ) {
+        return 'device_backup_json';
+      }
       if (trimmed.includes('clue') || (trimmed.includes('cycles') && trimmed.includes('period_length'))) {
         return 'clue_json';
       }
@@ -41,6 +50,12 @@ export class MigrationService {
       }
       case 'apple_health_xml': {
         const parsed = AppleHealthParser.parseXml(content);
+        cycles = parsed.cycles;
+        logs = parsed.logs;
+        break;
+      }
+      case 'device_backup_json': {
+        const parsed = DeviceBackupParser.parseJson(content);
         cycles = parsed.cycles;
         logs = parsed.logs;
         break;

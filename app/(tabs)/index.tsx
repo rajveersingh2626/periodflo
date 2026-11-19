@@ -8,16 +8,22 @@ import { TactileButton } from '../../src/components/ui/TactileButton';
 import { PeriodCycle, DailyLog, CyclePrediction } from '../../src/types/cycle';
 import { PredictiveEngine } from '../../src/services/predictions/engine';
 import { dbService } from '../../src/services/storage/db';
+import { SUHANI_CYCLES } from '../../src/services/storage/suhaniData';
 import { PlusCircle, Users } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { PWAInstallBanner } from '../../src/components/ui/PWAInstallBanner';
 
 export default function CycleHomeScreen() {
   const router = useRouter();
-  const [cycles, setCycles] = useState<PeriodCycle[]>([]);
-  const [prediction, setPrediction] = useState<CyclePrediction | null>(null);
+  const [cycles, setCycles] = useState<PeriodCycle[]>(SUHANI_CYCLES);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
+  );
+  const [prediction, setPrediction] = useState<CyclePrediction>(() =>
+    PredictiveEngine.calculatePredictions(
+      SUHANI_CYCLES,
+      new Date().toISOString().split('T')[0]
+    )
   );
   const [activeLog, setActiveLog] = useState<DailyLog | null>(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -29,16 +35,8 @@ export default function CycleHomeScreen() {
   const loadData = async () => {
     let loadedCycles = await dbService.getCycles();
     if (loadedCycles.length === 0) {
-      // Seed default baseline cycle for seamless day-one experience
-      const initialCycle: PeriodCycle = {
-        id: 'c-init',
-        startDate: '2026-11-01',
-        endDate: '2026-11-05',
-        cycleLengthDays: 28,
-        periodLengthDays: 5,
-      };
-      await dbService.saveCycle(initialCycle);
-      loadedCycles = [initialCycle];
+      await dbService.seedSuhaniData();
+      loadedCycles = await dbService.getCycles();
     }
     setCycles(loadedCycles);
 
@@ -72,8 +70,6 @@ export default function CycleHomeScreen() {
     }
   };
 
-  if (!prediction) return null;
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -81,6 +77,7 @@ export default function CycleHomeScreen() {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.appName}>PeriodFLO</Text>
+            <Text style={styles.userGreeting}>Welcome, {dbService.getUserProfile().name} 🌸</Text>
             <Text style={styles.dateDisplay}>
               {new Date(selectedDate).toLocaleDateString(undefined, {
                 weekday: 'short',
@@ -172,6 +169,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.light.terracotta,
     letterSpacing: -0.5,
+  },
+  userGreeting: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textPrimary,
+    marginTop: 1,
   },
   dateDisplay: {
     fontSize: 13,

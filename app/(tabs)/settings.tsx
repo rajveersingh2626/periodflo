@@ -74,6 +74,14 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleLoadSuhaniData = async () => {
+    await dbService.seedSuhaniData();
+    Alert.alert(
+      "Suhani's Data Populated",
+      'Successfully loaded 47 historical cycles (2022–2026) and 106 daily symptom logs with a 30-day baseline cycle and 4-day period average.'
+    );
+  };
+
   const handleWipeData = () => {
     Alert.alert(
       'Erase All Data?',
@@ -167,6 +175,13 @@ export default function SettingsScreen() {
             icon={<FileText size={16} color={Colors.light.terracotta} />}
             onPress={handleImportSampleData}
             style={{ marginTop: 12 }}
+          />
+          <TactileButton
+            title="Reload Suhani's Account Data (47 Cycles)"
+            variant="primary"
+            icon={<UploadCloud size={16} color="#FFFFFF" />}
+            onPress={handleLoadSuhaniData}
+            style={{ marginTop: 8 }}
           />
         </View>
 

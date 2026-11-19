@@ -6,17 +6,32 @@ import { WellnessCards } from '../../src/components/wellness/WellnessCards';
 import { dbService } from '../../src/services/storage/db';
 import { PredictiveEngine } from '../../src/services/predictions/engine';
 import { InsightEngine, DailyInsightResult } from '../../src/services/insights/nlgEngine';
+import { SUHANI_CYCLES } from '../../src/services/storage/suhaniData';
 
 export default function InsightsScreen() {
-  const [insight, setInsight] = useState<DailyInsightResult | null>(null);
+  const [insight, setInsight] = useState<DailyInsightResult>(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const initialPred = PredictiveEngine.calculatePredictions(SUHANI_CYCLES, today);
+    return InsightEngine.generateDailyInsight({
+      cycleDay: initialPred.currentCycleDay,
+      phase: initialPred.currentPhase,
+      symptoms: ['cravings'],
+      energyLevel: 3,
+      sleepQuality: 4,
+    });
+  });
 
   useEffect(() => {
     loadInsight();
   }, []);
 
   const loadInsight = async () => {
+    let cycles = await dbService.getCycles();
+    if (cycles.length === 0) {
+      await dbService.seedSuhaniData();
+      cycles = await dbService.getCycles();
+    }
     const today = new Date().toISOString().split('T')[0];
-    const cycles = await dbService.getCycles();
     const log = await dbService.getDailyLog(today);
     const prediction = PredictiveEngine.calculatePredictions(cycles, today);
 
@@ -30,8 +45,6 @@ export default function InsightsScreen() {
 
     setInsight(generated);
   };
-
-  if (!insight) return null;
 
   return (
     <SafeAreaView style={styles.safeArea}>

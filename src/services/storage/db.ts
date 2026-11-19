@@ -1,19 +1,48 @@
 import { PeriodCycle, DailyLog } from '../../types/cycle';
 import { CryptoService } from './crypto';
+import {
+  SUHANI_PROFILE,
+  SUHANI_CYCLES,
+  SUHANI_LOGS,
+  UserProfile,
+} from './suhaniData';
 
 export class DatabaseService {
   private masterKey: string;
   private cyclesStore: Map<string, string> = new Map(); // id -> encrypted JSON
   private logsStore: Map<string, string> = new Map(); // date -> encrypted JSON
+  private userProfile: UserProfile = { ...SUHANI_PROFILE };
   private isInitialized = false;
 
   constructor() {
     this.masterKey = CryptoService.generateMasterKey();
   }
 
-  public async initialize(dbPath: string = 'periodflo.db'): Promise<void> {
-    // In-memory or local encrypted database initialization
-    this.isInitialized = true;
+  public async initialize(dbPath: string = 'periodflo.db', seedDefault: boolean = false): Promise<void> {
+    if (!this.isInitialized) {
+      this.isInitialized = true;
+      if (seedDefault && this.cyclesStore.size === 0) {
+        await this.seedSuhaniData();
+      }
+    }
+  }
+
+  public getUserProfile(): UserProfile {
+    return this.userProfile;
+  }
+
+  public setUserProfile(profile: UserProfile): void {
+    this.userProfile = profile;
+  }
+
+  public async seedSuhaniData(): Promise<void> {
+    this.userProfile = { ...SUHANI_PROFILE };
+    for (const cycle of SUHANI_CYCLES) {
+      await this.saveCycle(cycle);
+    }
+    for (const log of SUHANI_LOGS) {
+      await this.saveDailyLog(log);
+    }
   }
 
   public setMasterKey(key: string): void {

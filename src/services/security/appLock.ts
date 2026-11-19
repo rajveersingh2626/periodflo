@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import { simpleHash } from '../storage/crypto';
 
 export class AppLockService {
   private static pinHash: string | null = null;
@@ -6,7 +6,7 @@ export class AppLockService {
   private static isLocked: boolean = false;
 
   public static setPin(pin: string): void {
-    this.pinHash = crypto.createHash('sha256').update(pin).digest('hex');
+    this.pinHash = simpleHash('applock:' + pin);
     this.isLocked = false;
   }
 
@@ -21,7 +21,7 @@ export class AppLockService {
 
   public static verifyPin(pin: string): boolean {
     if (!this.pinHash) return true;
-    const testHash = crypto.createHash('sha256').update(pin).digest('hex');
+    const testHash = simpleHash('applock:' + pin);
     const valid = testHash === this.pinHash;
     if (valid) {
       this.isLocked = false;

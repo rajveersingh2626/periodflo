@@ -6,6 +6,7 @@ export type MigrationFormat =
   | 'clue_json'
   | 'clue_csv'
   | 'apple_health_xml'
+  | 'device_backup_json'
   | 'generic_csv'
   | 'generic_json';
 

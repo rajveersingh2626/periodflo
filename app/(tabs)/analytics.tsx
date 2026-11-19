@@ -5,18 +5,27 @@ import { CycleAnalytics } from '../../src/components/analytics/CycleAnalytics';
 import { dbService } from '../../src/services/storage/db';
 import { MigrationService } from '../../src/services/migration/importer';
 import { PeriodCycle, DailyLog, CycleBaseline } from '../../src/types/cycle';
+import {
+  SUHANI_CYCLES,
+  SUHANI_LOGS,
+  SUHANI_BASELINE,
+} from '../../src/services/storage/suhaniData';
 
 export default function AnalyticsScreen() {
-  const [cycles, setCycles] = useState<PeriodCycle[]>([]);
-  const [logs, setLogs] = useState<DailyLog[]>([]);
-  const [baseline, setBaseline] = useState<CycleBaseline | null>(null);
+  const [cycles, setCycles] = useState<PeriodCycle[]>(SUHANI_CYCLES);
+  const [logs, setLogs] = useState<DailyLog[]>(SUHANI_LOGS);
+  const [baseline, setBaseline] = useState<CycleBaseline>(SUHANI_BASELINE);
 
   useEffect(() => {
     loadAnalytics();
   }, []);
 
   const loadAnalytics = async () => {
-    const loadedCycles = await dbService.getCycles();
+    let loadedCycles = await dbService.getCycles();
+    if (loadedCycles.length === 0) {
+      await dbService.seedSuhaniData();
+      loadedCycles = await dbService.getCycles();
+    }
     const loadedLogs = await dbService.getDailyLogs();
     const computedBaseline = MigrationService.calculateBaseline(loadedCycles);
 
@@ -24,8 +33,6 @@ export default function AnalyticsScreen() {
     setLogs(loadedLogs);
     setBaseline(computedBaseline);
   };
-
-  if (!baseline) return null;
 
   return (
     <SafeAreaView style={styles.safeArea}>

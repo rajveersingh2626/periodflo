@@ -1,0 +1,3 @@
+apple_idfa: nil
+isAttAllowed: false
+isGDPRAllowed: false

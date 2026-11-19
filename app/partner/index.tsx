@@ -17,6 +17,9 @@ import { PartnerPayload, SharedPermissions, E2EESyncService } from '../../src/se
 import { PairingService } from '../../src/services/sync/pairing';
 import { LocalNotificationScheduler, DiscreetAlert } from '../../src/services/notifications/localScheduler';
 import { relayServer } from '../../server/src/index';
+import { dbService } from '../../src/services/storage/db';
+import { PredictiveEngine } from '../../src/services/predictions/engine';
+import { InsightEngine } from '../../src/services/insights/nlgEngine';
 import { ArrowLeft, Sliders, Bell } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
@@ -39,22 +42,45 @@ export default function PartnerModeScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [scheduledAlerts, setScheduledAlerts] = useState<DiscreetAlert[]>([]);
 
-  // Raw decrypted payload (simulated client state)
-  const rawDecryptedPayload = {
-    cycleDay: 22,
-    phase: 'luteal' as const,
-    countdownDays: 6,
-    energyForecast: 'Gentle, introspective energy',
-    symptoms: ['cramps' as const, 'fatigue' as const],
+  const [partnerPayload, setPartnerPayload] = useState<PartnerPayload>({
+    cycleDay: 18,
+    phase: 'ovulatory',
+    countdownDays: 12,
+    energyForecast: 'Peak physical and social energy',
+    symptoms: ['cravings'],
     empathyTip:
-      'Her progesterone is peaking. Keep dinner simple, offer a cozy night in, and run a warm bath or prepare a heating pad unprompted.',
-  };
+      "Suhani is transitioning into the post-ovulatory luteal phase. Offer a gentle, low-stress evening and support her cravings.",
+  });
 
-  // Strictly filtered by primary user permissions
-  const partnerPayload: PartnerPayload = E2EESyncService.filterPayloadByPermissions(
-    rawDecryptedPayload,
-    permissions
-  );
+  useEffect(() => {
+    const loadDynamicPartnerData = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const cycles = await dbService.getCycles();
+      if (cycles.length > 0) {
+        const pred = PredictiveEngine.calculatePredictions(cycles, today);
+        const log = await dbService.getDailyLog(today);
+        const insight = InsightEngine.generateDailyInsight({
+          cycleDay: pred.currentCycleDay,
+          phase: pred.currentPhase,
+          symptoms: log?.symptoms || ['cravings'],
+          energyLevel: log?.energyLevel || 3,
+          sleepQuality: log?.sleepQuality || 4,
+        });
+
+        const raw = {
+          cycleDay: pred.currentCycleDay,
+          phase: pred.currentPhase,
+          countdownDays: pred.daysUntilNextPeriod,
+          energyForecast: insight.partnerEmpathyTip.energyForecast,
+          symptoms: log?.symptoms || ['cravings' as const],
+          empathyTip: `Suhani is on Day ${pred.currentCycleDay} (${pred.currentPhase} phase). ${insight.partnerEmpathyTip.actionableIdea}`,
+        };
+        const filtered = E2EESyncService.filterPayloadByPermissions(raw, permissions);
+        setPartnerPayload(filtered);
+      }
+    };
+    loadDynamicPartnerData();
+  }, [permissions]);
 
   useEffect(() => {
     // Register pairing code on rendezvous server for demo / live pairing
@@ -108,7 +134,7 @@ export default function PartnerModeScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           />
-          <Text style={styles.headerTitle}>Partner View</Text>
+          <Text style={styles.headerTitle}>Suhani's Partner Sync</Text>
           <TactileButton
             title="Share"
             variant="ghost"
