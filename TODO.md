@@ -10,4 +10,4 @@
 - [x] Task 7: Primary Experience: Interactive Calendar & 1-Tap Daily Check-In (Month grid, phase ring, quick-log sheet with tactile press)
 - [x] Task 8: Primary Experience: Daily Insights & Holistic Wellness (Phase-based nutrition, hydration, workout, self-care cards, cycle regularity charts)
 - [x] Task 9: Dedicated Partner Mode Dashboard & Discreet Alerts (Countdown ring, daily energy forecast, actionable support tips, local notification scheduler)
-- [ ] Task 10: Security, App Lock & Data Sovereignty (PIN/Biometric lock screen, 1-tap data export, instant cryptographic data wipe)
+- [x] Task 10: Security, App Lock & Data Sovereignty (PIN/Biometric lock screen, 1-tap data export, instant cryptographic data wipe)
