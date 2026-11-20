@@ -33,7 +33,7 @@ describe('Phase Override & Body Autonomy Calibration', () => {
       symptoms: ['bloating'],
       moods: ['energetic'],
       overridePhase: 'ovulatory' as CyclePhase,
-      phaseOverrideReason: '💧 Noticed peak stretchy cervical mucus',
+      phaseOverrideReason: 'Noticed peak stretchy cervical mucus',
     };
     await dbService.saveDailyLog(log);
 
@@ -68,7 +68,7 @@ describe('Phase Override & Body Autonomy Calibration', () => {
       symptoms: [],
       moods: [],
       overridePhase: 'follicular',
-      phaseOverrideReason: '⚡ High stamina',
+      phaseOverrideReason: 'High stamina and focus',
     };
     await dbService.saveDailyLog(log);
 

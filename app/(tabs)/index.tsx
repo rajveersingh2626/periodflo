@@ -143,7 +143,11 @@ export default function CycleHomeScreen() {
               style={styles.profilePill}
               activeOpacity={0.7}
             >
-              <Text style={styles.profileEmoji}>{activeProfile.avatar || '🌸'}</Text>
+              <View style={styles.profileInitialBadge}>
+                <Text style={styles.profileInitialText}>
+                  {(activeProfile.name ? activeProfile.name.charAt(0) : 'U').toUpperCase()}
+                </Text>
+              </View>
               <Text style={styles.profileName}>{activeProfile.name}</Text>
               <ChevronDown size={14} color={Colors.light.terracotta} style={{ marginLeft: 3 }} />
             </TouchableOpacity>
@@ -272,9 +276,19 @@ const styles = StyleSheet.create({
     marginTop: 3,
     marginBottom: 2,
   },
-  profileEmoji: {
-    fontSize: 12,
-    marginRight: 4,
+  profileInitialBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.light.terracotta,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  profileInitialText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   profileName: {
     fontSize: 12,

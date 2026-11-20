@@ -52,9 +52,9 @@ describe('DatabaseService Multi-Account & Profile Manager', () => {
   });
 
   it('allows creating a new custom profile and switching to it', async () => {
-    const newProfile = await db.createProfile('Aria', '✨', 29, 5);
+    const newProfile = await db.createProfile('Aria', 'A', 29, 5);
     expect(newProfile.name).toBe('Aria');
-    expect(newProfile.avatar).toBe('✨');
+    expect(newProfile.avatar).toBe('A');
     expect(db.getUserProfile().id).toBe(newProfile.id);
 
     const all = db.getAllProfiles();

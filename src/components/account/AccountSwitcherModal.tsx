@@ -30,10 +30,7 @@ export const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
   const [activeProfile, setActiveProfile] = useState<UserProfile>(() => dbService.getUserProfile());
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('✨');
   const [cycleLength, setCycleLength] = useState('28');
-
-  const avatarOptions = ['✨', '🌸', '🌿', '🌙', '💫', '🌻'];
 
   const refreshState = () => {
     setProfiles(dbService.getAllProfiles());
@@ -54,7 +51,8 @@ export const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
       return;
     }
     const cLen = parseInt(cycleLength, 10) || 28;
-    await dbService.createProfile(trimmed, selectedAvatar, cLen, 5);
+    const initial = trimmed.charAt(0).toUpperCase();
+    await dbService.createProfile(trimmed, initial, cLen, 5);
     refreshState();
     setIsCreating(false);
     setNewName('');
@@ -97,7 +95,9 @@ export const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                   activeOpacity={0.8}
                 >
                   <View style={styles.profileAvatar}>
-                    <Text style={{ fontSize: 24 }}>{p.avatar || '🌸'}</Text>
+                    <Text style={styles.avatarInitialText}>
+                      {(p.name ? p.name.charAt(0) : 'U').toUpperCase()}
+                    </Text>
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <View style={styles.nameRow}>
@@ -144,19 +144,6 @@ export const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                   value={newName}
                   onChangeText={setNewName}
                 />
-
-                <Text style={styles.inputLabel}>CHOOSE AVATAR</Text>
-                <View style={styles.avatarRow}>
-                  {avatarOptions.map((av) => (
-                    <TouchableOpacity
-                      key={av}
-                      style={[styles.avatarPick, selectedAvatar === av && styles.avatarPickSelected]}
-                      onPress={() => setSelectedAvatar(av)}
-                    >
-                      <Text style={{ fontSize: 20 }}>{av}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
 
                 <Text style={styles.inputLabel}>AVERAGE CYCLE LENGTH (DAYS)</Text>
                 <TextInput
@@ -271,6 +258,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E8E4DE',
+  },
+  avatarInitialText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.light.terracotta,
   },
   nameRow: {
     flexDirection: 'row',

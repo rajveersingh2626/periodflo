@@ -72,12 +72,12 @@ const PHASE_OPTIONS: PhaseOption[] = [
 ];
 
 const COMMON_REASONS = [
-  '🧪 Positive LH ovulation test strip today',
-  '💧 Noticed peak stretchy (egg-white) cervical mucus',
-  '⚡ High physical stamina & upbeat mood (feels follicular)',
-  '🌙 Experiencing PMS cues, bloating, or breast tenderness',
-  '🩸 Started early spotting or light flow',
-  '✈️ Recent travel, illness, or stress delayed my cycle',
+  'Positive LH ovulation test strip today',
+  'Noticed peak stretchy (egg-white) cervical mucus',
+  'High physical stamina and upbeat mood (feels follicular)',
+  'Experiencing PMS cues, bloating, or breast tenderness',
+  'Started early spotting or light flow',
+  'Recent travel, illness, or stress delayed my cycle',
 ];
 
 export const PhaseCalibrationModal: React.FC<PhaseCalibrationModalProps> = ({

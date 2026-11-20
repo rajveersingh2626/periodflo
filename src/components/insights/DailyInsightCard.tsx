@@ -118,7 +118,7 @@ export const DailyInsightCard: React.FC<DailyInsightCardProps> = ({
 
           <View style={styles.citationRow}>
             <Text style={styles.citationText}>
-              📚 {scientificEvidence.clinicalCitation}
+              {scientificEvidence.clinicalCitation}
             </Text>
             {scientificEvidence.pmid && (
               <View style={styles.pmidPill}>

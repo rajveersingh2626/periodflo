@@ -13,7 +13,7 @@ export interface UserProfile {
 export const SUHANI_PROFILE: UserProfile = {
   id: "suhani",
   name: "Suhani",
-  avatar: "🌸",
+  avatar: "S",
   averageCycleLengthDays: 30,
   averagePeriodLengthDays: 4,
   estimatedLutealPhaseDays: 14,
@@ -23,7 +23,7 @@ export const SUHANI_PROFILE: UserProfile = {
 export const DEFAULT_PERSONAL_PROFILE: UserProfile = {
   id: "personal",
   name: "My Account",
-  avatar: "🌿",
+  avatar: "P",
   averageCycleLengthDays: 28,
   averagePeriodLengthDays: 5,
   estimatedLutealPhaseDays: 14,

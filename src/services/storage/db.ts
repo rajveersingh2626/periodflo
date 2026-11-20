@@ -97,7 +97,7 @@ export class DatabaseService {
 
   public async createProfile(
     name: string,
-    avatar: string = '✨',
+    avatar: string = 'U',
     averageCycleLengthDays: number = 28,
     averagePeriodLengthDays: number = 5
   ): Promise<UserProfile> {

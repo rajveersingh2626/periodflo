@@ -119,7 +119,9 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={[styles.iconCircle, { backgroundColor: '#FFF2EE' }]}>
-              <Text style={{ fontSize: 18 }}>{activeProfile.avatar || '🌸'}</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.light.terracotta }}>
+                {(activeProfile.name ? activeProfile.name.charAt(0) : 'U').toUpperCase()}
+              </Text>
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.cardTitle}>ACTIVE ACCOUNT PROFILE</Text>

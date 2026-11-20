@@ -51,7 +51,9 @@ export const WelcomeLoginScreen: React.FC<WelcomeLoginScreenProps> = ({
               activeOpacity={0.8}
             >
               <View style={styles.avatarCircle}>
-                <Text style={{ fontSize: 22 }}>{p.avatar || '🌸'}</Text>
+                <Text style={styles.avatarText}>
+                  {(p.name ? p.name.charAt(0) : 'U').toUpperCase()}
+                </Text>
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.profileName}>{p.name}</Text>
@@ -170,6 +172,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E8E4DE',
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.light.terracotta,
   },
   profileName: {
     fontSize: 16,
