@@ -10,7 +10,7 @@ import {
 import { Colors } from '../../theme/colors';
 import { CyclePhase } from '../../types/cycle';
 import { TactileButton } from '../ui/TactileButton';
-import { Sparkles, Check, RotateCcw, X, Info, Flame, Droplet, Sun, Moon } from 'lucide-react-native';
+import { Sparkles, Check, RotateCcw, X, Info, Flame, Droplet, Sun, Moon, Calendar } from 'lucide-react-native';
 
 interface PhaseCalibrationModalProps {
   visible: boolean;
@@ -201,6 +201,24 @@ export const PhaseCalibrationModal: React.FC<PhaseCalibrationModalProps> = ({
                   </TouchableOpacity>
                 );
               })}
+            </View>
+
+            {/* Date Impact Preview */}
+            <View style={styles.dateImpactCard}>
+              <Calendar size={15} color="#0284C7" style={{ marginTop: 2 }} />
+              <View style={{ flex: 1, marginLeft: 8 }}>
+                <Text style={styles.dateImpactTitle}>CYCLE DATES AUTO-CALCULATION</Text>
+                <Text style={styles.dateImpactBody}>
+                  {selectedPhase === 'ovulatory' &&
+                    'Auto-shifts next period date to ~14 days from today based on constant biological luteal phase length.'}
+                  {selectedPhase === 'menstrual' &&
+                    'Resets today to Cycle Day 1 and projects the next cycle start date accordingly.'}
+                  {selectedPhase === 'follicular' &&
+                    'Accounts for delayed ovulation, shifting predicted fertile window and next period start forward.'}
+                  {selectedPhase === 'luteal' &&
+                    'Re-calibrates remaining days until next menses based on confirmed post-ovulatory state.'}
+                </Text>
+              </View>
             </View>
 
             {/* Biological Cues & Reasons */}
@@ -416,6 +434,29 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: Colors.light.textSecondary,
     marginTop: 2,
+  },
+  dateImpactCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F0F9FF',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  dateImpactTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+    letterSpacing: 0.8,
+    marginBottom: 3,
+  },
+  dateImpactBody: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#0369A1',
+    fontWeight: '500',
   },
   reasonsList: {
     gap: 8,

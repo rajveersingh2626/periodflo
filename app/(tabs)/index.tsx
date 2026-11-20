@@ -62,14 +62,16 @@ export default function CycleHomeScreen() {
     }
     setCycles(loadedCycles);
 
-    const calculatedPrediction = PredictiveEngine.calculatePredictions(
-      loadedCycles,
-      selectedDate
-    );
-    setPrediction(calculatedPrediction);
-
     const log = await dbService.getDailyLog(selectedDate);
     setActiveLog(log);
+
+    const calculatedPrediction = PredictiveEngine.calculatePredictions(
+      loadedCycles,
+      selectedDate,
+      log?.overridePhase,
+      log?.phaseOverrideReason
+    );
+    setPrediction(calculatedPrediction);
   };
 
   const handleSaveLog = async (log: DailyLog) => {
@@ -105,12 +107,25 @@ export default function CycleHomeScreen() {
     if (phase) {
       currentLog.overridePhase = phase;
       currentLog.phaseOverrideReason = reason;
+
+      if (phase === 'menstrual') {
+        const existingCycle = cycles.find((c) => c.startDate === selectedDate);
+        if (!existingCycle) {
+          const newCycle: PeriodCycle = {
+            id: `cycle-${selectedDate}`,
+            startDate: selectedDate,
+            endDate: selectedDate,
+            periodLengthDays: activeProfile.averagePeriodLengthDays || 5,
+          };
+          await dbService.saveCycle(newCycle);
+        }
+      }
     } else {
       delete currentLog.overridePhase;
       delete currentLog.phaseOverrideReason;
     }
     await dbService.saveDailyLog(currentLog);
-    setActiveLog({ ...currentLog });
+    await loadData();
   };
 
   const effectivePhase = activeLog?.overridePhase || prediction.currentPhase;
