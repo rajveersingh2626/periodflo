@@ -4,6 +4,8 @@ import {
   HormoneTrajectory,
   NarrativeOpeners,
   SymptomNarratives,
+  PhaseScientificEvidence,
+  ScientificEvidence,
 } from './vocabulary';
 import { PhaseWellnessAdvice, WellnessTips } from './wellnessAdvice';
 import { PartnerEmpathyEngine, PartnerEmpathyTip } from './partnerEmpathy';
@@ -22,6 +24,7 @@ export interface DailyInsightResult {
   phase: CyclePhase;
   primaryNarrative: string;
   hormoneStatus: HormoneTrajectory;
+  scientificEvidence: ScientificEvidence;
   wellnessTips: WellnessTips;
   partnerEmpathyTip: PartnerEmpathyTip;
 }
@@ -31,7 +34,7 @@ export class InsightEngine {
    * Deterministic seed generator from cycle day and phase to vary openings predictably without random flicker
    */
   private static getVariationIndex(cycleDay: number, listLength: number): number {
-    return (cycleDay * 7 + 3) % listLength;
+    return Math.abs((cycleDay * 7 + 3) % listLength);
   }
 
   public static generateDailyInsight(params: DailyInsightParams): DailyInsightResult {
@@ -76,6 +79,10 @@ export class InsightEngine {
 
     const primaryNarrative = paragraphs.join(' ');
 
+    // Scientific clinical evidence selection
+    const evidenceList = PhaseScientificEvidence[phase];
+    const scientificEvidence = evidenceList[this.getVariationIndex(cycleDay, evidenceList.length)];
+
     // Wellness advice selection
     const adviceList = PhaseWellnessAdvice[phase];
     const wellnessTips = adviceList[this.getVariationIndex(cycleDay, adviceList.length)];
@@ -93,6 +100,7 @@ export class InsightEngine {
       phase,
       primaryNarrative,
       hormoneStatus,
+      scientificEvidence,
       wellnessTips,
       partnerEmpathyTip,
     };

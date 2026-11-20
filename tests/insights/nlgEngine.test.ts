@@ -39,6 +39,8 @@ describe('Physiological NLG Insights Engine', () => {
     // Deep physiological context
     expect(day1.hormoneStatus.estrogen).toBeDefined();
     expect(day1.hormoneStatus.progesterone).toBeDefined();
+    expect(day1.hormoneStatus.estimatedEstrogenRange).toBeDefined();
+    expect(day1.hormoneStatus.estimatedProgesteroneRange).toBeDefined();
   });
 
   it('should dynamically adapt narrative when severe symptoms are present', () => {
@@ -51,10 +53,36 @@ describe('Physiological NLG Insights Engine', () => {
     });
 
     expect(withSevereSymptoms.primaryNarrative.toLowerCase()).toMatch(
-      /progesterone|cramps|rest|soothe|calm|headache/
+      /progesterone|cramps|rest|soothe|calm|headache|prostaglandin/
     );
     expect(withSevereSymptoms.wellnessTips.nutrition).toBeDefined();
     expect(withSevereSymptoms.wellnessTips.workout).toBeDefined();
+  });
+
+  it('should generate evidence-based scientific mechanisms and PubMed citations', () => {
+    const follicularInsight = InsightEngine.generateDailyInsight({
+      cycleDay: 9,
+      phase: 'follicular',
+      symptoms: [],
+      energyLevel: 4,
+    });
+
+    expect(follicularInsight.scientificEvidence).toBeDefined();
+    expect(follicularInsight.scientificEvidence.topic).toBeDefined();
+    expect(follicularInsight.scientificEvidence.mechanism.length).toBeGreaterThan(30);
+    expect(follicularInsight.scientificEvidence.clinicalCitation).toBeDefined();
+    expect(follicularInsight.scientificEvidence.takeaway.length).toBeGreaterThan(20);
+
+    const lutealInsight = InsightEngine.generateDailyInsight({
+      cycleDay: 21,
+      phase: 'luteal',
+      symptoms: ['bloating'],
+      energyLevel: 3,
+    });
+
+    expect(lutealInsight.scientificEvidence).toBeDefined();
+    expect(lutealInsight.scientificEvidence.pmid).toBeDefined();
+    expect(typeof lutealInsight.scientificEvidence.pmid).toBe('string');
   });
 
   it('should generate actionable, empathetic tips for the partner view', () => {
@@ -70,5 +98,6 @@ describe('Physiological NLG Insights Engine', () => {
     expect(partnerInsight.partnerEmpathyTip.actionableIdea).toBeDefined();
     expect(partnerInsight.partnerEmpathyTip.emotionalVibe).toBeDefined();
     expect(partnerInsight.partnerEmpathyTip.actionableIdea.length).toBeGreaterThan(20);
+    expect(partnerInsight.partnerEmpathyTip.communicationTip).toBeDefined();
   });
 });
