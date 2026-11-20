@@ -12,6 +12,21 @@ interface CalendarGridProps {
   onSelectDate: (date: string) => void;
 }
 
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
   currentMonth,
   cycles,
@@ -19,8 +34,24 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   selectedDate,
   onSelectDate,
 }) => {
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
+  const [viewDate, setViewDate] = useState<Date>(() => new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const handlePrevMonth = () => {
+    setViewDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setViewDate(new Date(year, month + 1, 1));
+  };
+
+  const handleResetToToday = () => {
+    setViewDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
+    const todayStr = new Date().toISOString().split('T')[0];
+    onSelectDate(todayStr);
+  };
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sun
@@ -39,19 +70,27 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   // Set of predicted period dates
   const predictedPeriodDates = new Set<string>();
-  const predStart = new Date(prediction.predictedPeriodStart + 'T00:00:00Z');
-  const predEnd = new Date(prediction.predictedPeriodEnd + 'T00:00:00Z');
-  for (let d = new Date(predStart); d <= predEnd; d.setUTCDate(d.getUTCDate() + 1)) {
-    predictedPeriodDates.add(d.toISOString().split('T')[0]);
+  if (prediction.predictedPeriodStart && prediction.predictedPeriodEnd) {
+    const predStart = new Date(prediction.predictedPeriodStart + 'T00:00:00Z');
+    const predEnd = new Date(prediction.predictedPeriodEnd + 'T00:00:00Z');
+    for (let d = new Date(predStart); d <= predEnd; d.setUTCDate(d.getUTCDate() + 1)) {
+      predictedPeriodDates.add(d.toISOString().split('T')[0]);
+    }
   }
 
   // Set of fertile dates
   const fertileDates = new Set<string>();
-  const fertStart = new Date(prediction.fertileWindowStart + 'T00:00:00Z');
-  const fertEnd = new Date(prediction.fertileWindowEnd + 'T00:00:00Z');
-  for (let d = new Date(fertStart); d <= fertEnd; d.setUTCDate(d.getUTCDate() + 1)) {
-    fertileDates.add(d.toISOString().split('T')[0]);
+  if (prediction.fertileWindowStart && prediction.fertileWindowEnd) {
+    const fertStart = new Date(prediction.fertileWindowStart + 'T00:00:00Z');
+    const fertEnd = new Date(prediction.fertileWindowEnd + 'T00:00:00Z');
+    for (let d = new Date(fertStart); d <= fertEnd; d.setUTCDate(d.getUTCDate() + 1)) {
+      fertileDates.add(d.toISOString().split('T')[0]);
+    }
   }
+
+  const isCurrentMonthView =
+    viewDate.getFullYear() === currentMonth.getFullYear() &&
+    viewDate.getMonth() === currentMonth.getMonth();
 
   const renderDays = () => {
     const cells = [];
@@ -108,6 +147,40 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Month Navigation Header */}
+      <View style={styles.monthNavRow}>
+        <Pressable
+          onPress={handlePrevMonth}
+          hitSlop={12}
+          style={({ pressed }) => [
+            styles.navButton,
+            { opacity: pressed ? 0.6 : 1 },
+          ]}
+        >
+          <Text style={styles.navButtonText}>‹</Text>
+        </Pressable>
+
+        <Pressable onPress={handleResetToToday} style={styles.monthTitleWrapper}>
+          <Text style={styles.monthTitleText}>
+            {MONTH_NAMES[month]} {year}
+          </Text>
+          {!isCurrentMonthView && (
+            <Text style={styles.todayPillText}>Return to today</Text>
+          )}
+        </Pressable>
+
+        <Pressable
+          onPress={handleNextMonth}
+          hitSlop={12}
+          style={({ pressed }) => [
+            styles.navButton,
+            { opacity: pressed ? 0.6 : 1 },
+          ]}
+        >
+          <Text style={styles.navButtonText}>›</Text>
+        </Pressable>
+      </View>
+
       {/* Weekday headers */}
       <View style={styles.headerRow}>
         {dayHeaders.map((h, i) => (
@@ -116,8 +189,10 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           </Text>
         ))}
       </View>
+
       {/* Day grid */}
       <View style={styles.grid}>{renderDays()}</View>
+
       {/* Legend */}
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
@@ -150,6 +225,44 @@ const styles = StyleSheet.create({
     borderColor: '#E8E4DE',
     marginVertical: 12,
   },
+  monthNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    paddingHorizontal: 4,
+  },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F7F5F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navButtonText: {
+    fontSize: 22,
+    fontWeight: '400',
+    color: Colors.light.textPrimary,
+    lineHeight: 24,
+  },
+  monthTitleWrapper: {
+    alignItems: 'center',
+  },
+  monthTitleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.light.textPrimary,
+    letterSpacing: -0.3,
+  },
+  todayPillText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.light.terracotta,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -159,7 +272,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: Colors.light.textMuted,
-    width: 36,
+    width: 38,
     textAlign: 'center',
   },
   grid: {

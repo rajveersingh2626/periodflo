@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { E2EESyncService, SharedPermissions } from '../../src/services/sync/e2ee';
+import { E2EESyncService, SharedPermissions, WebCryptoECDH } from '../../src/services/sync/e2ee';
 
 describe('Zero-Knowledge E2EE Sync Protocol', () => {
   it('should generate an ECDH keypair and derive identical shared symmetric secret on both devices', () => {
@@ -23,6 +23,21 @@ describe('Zero-Knowledge E2EE Sync Protocol', () => {
     expect(primarySharedSecret).toBeDefined();
     expect(partnerSharedSecret).toBeDefined();
     expect(primarySharedSecret).toBe(partnerSharedSecret);
+  });
+
+  it('should perform Web Crypto ECDH key agreement', async () => {
+    const aliceKeys = await WebCryptoECDH.generateKeyPair();
+    const bobKeys = await WebCryptoECDH.generateKeyPair();
+
+    const alicePubHex = await WebCryptoECDH.exportPublicKey(aliceKeys.publicKey);
+    const bobPubHex = await WebCryptoECDH.exportPublicKey(bobKeys.publicKey);
+
+    const aliceShared = await WebCryptoECDH.deriveSharedSecret(aliceKeys.privateKey, bobPubHex);
+    const bobShared = await WebCryptoECDH.deriveSharedSecret(bobKeys.privateKey, alicePubHex);
+
+    expect(aliceShared).toBeDefined();
+    expect(bobShared).toBeDefined();
+    expect(aliceShared).toBe(bobShared);
   });
 
   it('should filter payload according to granular permissions before encryption', () => {
@@ -58,7 +73,7 @@ describe('Zero-Knowledge E2EE Sync Protocol', () => {
     expect((sanitized as any).sexualActivity).toBeUndefined();
   });
 
-  it('should encrypt and decrypt partner payload end-to-end', () => {
+  it('should encrypt and decrypt partner payload end-to-end', async () => {
     const primarySession = E2EESyncService.generateKeyPair();
     const partnerSession = E2EESyncService.generateKeyPair();
     const sharedSecret = E2EESyncService.computeSharedSecret(
@@ -74,11 +89,11 @@ describe('Zero-Knowledge E2EE Sync Protocol', () => {
       empathyTip: 'Make dinner and offer a back rub tonight',
     };
 
-    const ciphertext = E2EESyncService.encryptForPartner(payload, sharedSecret);
+    const ciphertext = await E2EESyncService.encryptForPartner(payload, sharedSecret);
     expect(typeof ciphertext).toBe('string');
     expect(ciphertext).not.toContain('luteal'); // Ciphertext only
 
-    const decrypted = E2EESyncService.decryptFromPartner(ciphertext, sharedSecret);
+    const decrypted = await E2EESyncService.decryptFromPartner(ciphertext, sharedSecret);
     expect(decrypted).toEqual(payload);
   });
 });

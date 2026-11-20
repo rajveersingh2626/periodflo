@@ -78,19 +78,43 @@ export default function CycleHomeScreen() {
     await dbService.saveDailyLog(log);
     setActiveLog(log);
 
-    // If flow is logged as period start, dynamically recalculate cycles
+    // If flow is logged as period start or continuation, dynamically update cycles
     if (log.flowIntensity && log.flowIntensity !== 'none' && log.flowIntensity !== 'spotting') {
-      const existingCycle = cycles.find((c) => c.startDate === log.date);
-      if (!existingCycle) {
+      const sortedCycles = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
+      const logDateTime = new Date(log.date + 'T00:00:00Z').getTime();
+
+      let matchedCycle: PeriodCycle | null = null;
+      for (const c of sortedCycles) {
+        const cStartTime = new Date(c.startDate + 'T00:00:00Z').getTime();
+        const diffDays = Math.round((logDateTime - cStartTime) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 10) {
+          matchedCycle = c;
+          break;
+        }
+      }
+
+      if (matchedCycle) {
+        // Bleeding continuation: update existing cycle
+        const updatedCycle: PeriodCycle = {
+          ...matchedCycle,
+          endDate: log.date > matchedCycle.endDate ? log.date : matchedCycle.endDate,
+          periodLengthDays: Math.max(
+            matchedCycle.periodLengthDays,
+            Math.round((logDateTime - new Date(matchedCycle.startDate + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24)) + 1
+          ),
+        };
+        await dbService.saveCycle(updatedCycle);
+      } else {
+        // New cycle
         const newCycle: PeriodCycle = {
           id: `cycle-${log.date}`,
           startDate: log.date,
           endDate: log.date,
-          periodLengthDays: activeProfile.averagePeriodLengthDays || 5,
+          periodLengthDays: 1,
         };
         await dbService.saveCycle(newCycle);
-        await loadData();
       }
+      await loadData();
     }
   };
 
@@ -109,8 +133,30 @@ export default function CycleHomeScreen() {
       currentLog.phaseOverrideReason = reason;
 
       if (phase === 'menstrual') {
-        const existingCycle = cycles.find((c) => c.startDate === selectedDate);
-        if (!existingCycle) {
+        const sortedCycles = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
+        const selectedDateTime = new Date(selectedDate + 'T00:00:00Z').getTime();
+
+        let matchedCycle: PeriodCycle | null = null;
+        for (const c of sortedCycles) {
+          const cStartTime = new Date(c.startDate + 'T00:00:00Z').getTime();
+          const diffDays = Math.round((selectedDateTime - cStartTime) / (1000 * 60 * 60 * 24));
+          if (diffDays >= 0 && diffDays <= 10) {
+            matchedCycle = c;
+            break;
+          }
+        }
+
+        if (matchedCycle) {
+          const updatedCycle: PeriodCycle = {
+            ...matchedCycle,
+            endDate: selectedDate > matchedCycle.endDate ? selectedDate : matchedCycle.endDate,
+            periodLengthDays: Math.max(
+              matchedCycle.periodLengthDays,
+              Math.round((selectedDateTime - new Date(matchedCycle.startDate + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24)) + 1
+            ),
+          };
+          await dbService.saveCycle(updatedCycle);
+        } else {
           const newCycle: PeriodCycle = {
             id: `cycle-${selectedDate}`,
             startDate: selectedDate,

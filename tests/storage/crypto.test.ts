@@ -8,7 +8,7 @@ describe('CryptoService (AES-256-GCM Zero-Knowledge Storage)', () => {
     expect(key.length).toBe(64); // 32 bytes in hex = 64 characters
   });
 
-  it('should encrypt and decrypt a plaintext string with authentication tag', () => {
+  it('should encrypt and decrypt a plaintext string with authentication tag', async () => {
     const key = CryptoService.generateMasterKey();
     const plaintext = JSON.stringify({
       flowIntensity: 'heavy',
@@ -16,20 +16,20 @@ describe('CryptoService (AES-256-GCM Zero-Knowledge Storage)', () => {
       notes: 'Severe pelvic pain on Day 1',
     });
 
-    const encrypted = CryptoService.encrypt(plaintext, key);
+    const encrypted = await CryptoService.encrypt(plaintext, key);
     expect(encrypted).toHaveProperty('ciphertext');
     expect(encrypted).toHaveProperty('iv');
     expect(encrypted).toHaveProperty('tag');
     expect(encrypted.ciphertext).not.toBe(plaintext);
 
-    const decrypted = CryptoService.decrypt(encrypted, key);
+    const decrypted = await CryptoService.decrypt(encrypted, key);
     expect(decrypted).toBe(plaintext);
   });
 
-  it('should fail decryption if ciphertext or tag is tampered with', () => {
+  it('should fail decryption if ciphertext or tag is tampered with', async () => {
     const key = CryptoService.generateMasterKey();
     const plaintext = 'Secret reproductive health data';
-    const encrypted = CryptoService.encrypt(plaintext, key);
+    const encrypted = await CryptoService.encrypt(plaintext, key);
 
     // Tamper with ciphertext
     const tamperedCipher = {
@@ -37,6 +37,6 @@ describe('CryptoService (AES-256-GCM Zero-Knowledge Storage)', () => {
       ciphertext: encrypted.ciphertext.slice(0, -4) + '0000',
     };
 
-    expect(() => CryptoService.decrypt(tamperedCipher, key)).toThrow();
+    await expect(CryptoService.decrypt(tamperedCipher, key)).rejects.toThrow();
   });
 });

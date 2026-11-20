@@ -49,16 +49,38 @@ export default function SettingsScreen() {
     }
   };
 
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch {
+        // Fallback gracefully if DOM/Blob unavailable
+      }
+    }
+  };
+
   const handleExportJson = async () => {
     const data = await DataExportService.generateExportData(dbService);
     const jsonStr = DataExportService.exportToJson(data);
-    Alert.alert('Data Export Ready', `Exported ${data.cycles.length} cycles and ${data.logs.length} logs in JSON.`);
+    const filename = `periodflo_backup_${new Date().toISOString().split('T')[0]}.json`;
+    downloadFile(jsonStr, filename, 'application/json');
+    Alert.alert('Data Export Ready', `Exported ${data.cycles.length} cycles and ${data.logs.length} logs to ${filename}.`);
   };
 
   const handleExportCsv = async () => {
     const data = await DataExportService.generateExportData(dbService);
     const csvStr = DataExportService.exportToCsv(data);
-    Alert.alert('CSV Export Ready', `Exported ${data.cycles.length} cycles in standard CSV format.`);
+    const filename = `periodflo_cycles_${new Date().toISOString().split('T')[0]}.csv`;
+    downloadFile(csvStr, filename, 'text/csv');
+    Alert.alert('CSV Export Ready', `Exported ${data.cycles.length} cycles in standard CSV format to ${filename}.`);
   };
 
   const handleImportSampleData = async () => {

@@ -1,4 +1,4 @@
-import { CryptoService, EncryptedPayload, getRandomBytes, bytesToHex, simpleHash } from '../storage/crypto';
+import { CryptoService, EncryptedPayload, getRandomBytes, bytesToHex, hexToBytes, simpleHash } from '../storage/crypto';
 import { CyclePhase, PhysicalSymptom } from '../../types/cycle';
 
 export interface KeyPair {
@@ -41,6 +41,38 @@ function getNodeCrypto(): any {
   return null;
 }
 
+export class WebCryptoECDH {
+  public static async generateKeyPair(): Promise<CryptoKeyPair> {
+    return await globalThis.crypto.subtle.generateKey(
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      ['deriveKey', 'deriveBits']
+    );
+  }
+
+  public static async exportPublicKey(key: CryptoKey): Promise<string> {
+    const raw = await globalThis.crypto.subtle.exportKey('raw', key);
+    return bytesToHex(new Uint8Array(raw));
+  }
+
+  public static async deriveSharedSecret(privateKey: CryptoKey, peerPublicKeyRawHex: string): Promise<string> {
+    const peerKeyBytes = hexToBytes(peerPublicKeyRawHex);
+    const peerKey = await globalThis.crypto.subtle.importKey(
+      'raw',
+      peerKeyBytes as any,
+      { name: 'ECDH', namedCurve: 'P-256' },
+      false,
+      []
+    );
+    const bits = await globalThis.crypto.subtle.deriveBits(
+      { name: 'ECDH', public: peerKey },
+      privateKey,
+      256
+    );
+    return bytesToHex(new Uint8Array(bits));
+  }
+}
+
 export class E2EESyncService {
   /**
    * Generates a fresh keypair
@@ -78,7 +110,7 @@ export class E2EESyncService {
       } catch {}
     }
 
-    // Universal browser agreement
+    // Universal browser agreement fallback
     return simpleHash('shared_secret:' + privateKeyHex + ':' + peerPublicKeyHex);
   }
 
@@ -123,34 +155,34 @@ export class E2EESyncService {
   }
 
   /**
-   * Encrypts outgoing partner payload using the derived shared secret
+   * Encrypts outgoing partner payload using the derived shared secret via AES-256-GCM
    */
-  public static encryptPayload(payload: PartnerPayload, sharedSecretHex: string): EncryptedPayload {
+  public static async encryptPayload(payload: PartnerPayload, sharedSecretHex: string): Promise<EncryptedPayload> {
     const serialized = JSON.stringify(payload);
-    return CryptoService.encrypt(serialized, sharedSecretHex);
+    return await CryptoService.encrypt(serialized, sharedSecretHex);
   }
 
-  public static encryptForPartner(payload: PartnerPayload, sharedSecretHex: string): string {
-    const enc = this.encryptPayload(payload, sharedSecretHex);
+  public static async encryptForPartner(payload: PartnerPayload, sharedSecretHex: string): Promise<string> {
+    const enc = await this.encryptPayload(payload, sharedSecretHex);
     return JSON.stringify(enc);
   }
 
   /**
    * Decrypts incoming encrypted partner payload
    */
-  public static decryptPayload(
+  public static async decryptPayload(
     encrypted: EncryptedPayload,
     sharedSecretHex: string
-  ): PartnerPayload {
-    const decrypted = CryptoService.decrypt(encrypted, sharedSecretHex);
+  ): Promise<PartnerPayload> {
+    const decrypted = await CryptoService.decrypt(encrypted, sharedSecretHex);
     return JSON.parse(decrypted);
   }
 
-  public static decryptFromPartner(
+  public static async decryptFromPartner(
     encryptedStr: string,
     sharedSecretHex: string
-  ): PartnerPayload {
+  ): Promise<PartnerPayload> {
     const enc = JSON.parse(encryptedStr);
-    return this.decryptPayload(enc, sharedSecretHex);
+    return await this.decryptPayload(enc, sharedSecretHex);
   }
 }
