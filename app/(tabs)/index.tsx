@@ -5,7 +5,7 @@ import { PhaseRing } from '../../src/components/calendar/PhaseRing';
 import { CalendarGrid } from '../../src/components/calendar/CalendarGrid';
 import { QuickLogModal } from '../../src/components/logging/QuickLogModal';
 import { TactileButton } from '../../src/components/ui/TactileButton';
-import { PeriodCycle, DailyLog, CyclePrediction } from '../../src/types/cycle';
+import { PeriodCycle, DailyLog, CyclePrediction, CyclePhase } from '../../src/types/cycle';
 import { PredictiveEngine } from '../../src/services/predictions/engine';
 import { dbService } from '../../src/services/storage/db';
 import { SUHANI_CYCLES } from '../../src/services/storage/suhaniData';
@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { PWAInstallBanner } from '../../src/components/ui/PWAInstallBanner';
 import { AccountSwitcherModal } from '../../src/components/account/AccountSwitcherModal';
 import { WelcomeLoginScreen } from '../../src/components/account/WelcomeLoginScreen';
+import { PhaseCalibrationModal } from '../../src/components/cycle/PhaseCalibrationModal';
 
 export default function CycleHomeScreen() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function CycleHomeScreen() {
   const [activeLog, setActiveLog] = useState<DailyLog | null>(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(() => dbService.isLoggedIn());
   const [activeProfile, setActiveProfile] = useState(() => dbService.getUserProfile());
 
@@ -90,6 +92,29 @@ export default function CycleHomeScreen() {
     }
   };
 
+  const handleSaveCalibration = async (phase: CyclePhase | null, reason?: string) => {
+    let currentLog = await dbService.getDailyLog(selectedDate);
+    if (!currentLog) {
+      currentLog = {
+        id: `log-${selectedDate}`,
+        date: selectedDate,
+        symptoms: [],
+        moods: [],
+      };
+    }
+    if (phase) {
+      currentLog.overridePhase = phase;
+      currentLog.phaseOverrideReason = reason;
+    } else {
+      delete currentLog.overridePhase;
+      delete currentLog.phaseOverrideReason;
+    }
+    await dbService.saveDailyLog(currentLog);
+    setActiveLog({ ...currentLog });
+  };
+
+  const effectivePhase = activeLog?.overridePhase || prediction.currentPhase;
+
   if (!isLoggedIn) {
     return (
       <>
@@ -146,8 +171,10 @@ export default function CycleHomeScreen() {
         {/* Phase Ring Hero */}
         <PhaseRing
           cycleDay={prediction.currentCycleDay}
-          phase={prediction.currentPhase}
+          phase={effectivePhase}
           daysUntilNextPeriod={prediction.daysUntilNextPeriod}
+          isOverridden={!!activeLog?.overridePhase}
+          onPressCalibrate={() => setIsCalibrationModalOpen(true)}
         />
 
         {/* Quick Log Action Bar */}
@@ -194,6 +221,17 @@ export default function CycleHomeScreen() {
         visible={isAccountModalOpen}
         onClose={() => setIsAccountModalOpen(false)}
         onProfileChanged={loadData}
+      />
+
+      {/* Phase Calibration Modal */}
+      <PhaseCalibrationModal
+        visible={isCalibrationModalOpen}
+        currentPhase={prediction.currentPhase}
+        currentCycleDay={prediction.currentCycleDay}
+        initialOverriddenPhase={activeLog?.overridePhase}
+        initialReason={activeLog?.phaseOverrideReason}
+        onClose={() => setIsCalibrationModalOpen(false)}
+        onSaveCalibration={handleSaveCalibration}
       />
     </SafeAreaView>
   );

@@ -41,6 +41,8 @@ export interface DailyLog {
   energyLevel?: number; // 1 to 5
   sleepQuality?: number; // 1 to 5
   bbtCelsius?: number; // Basal Body Temperature
+  overridePhase?: CyclePhase;
+  phaseOverrideReason?: string;
   notes?: string;
   updatedAt?: string;
 }
@@ -65,4 +67,7 @@ export interface CyclePrediction {
   daysUntilNextPeriod: number;
   isOverdue?: boolean;
   daysLate?: number;
+  isPhaseOverridden?: boolean;
+  calibratedPhase?: CyclePhase;
+  calibrationReason?: string;
 }

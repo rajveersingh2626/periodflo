@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { CyclePhase } from '../../types/cycle';
 import { PhaseHelper } from '../../services/predictions/phases';
+import { Sparkles } from 'lucide-react-native';
 
 interface PhaseRingProps {
   cycleDay: number;
@@ -10,6 +11,8 @@ interface PhaseRingProps {
   daysUntilNextPeriod: number;
   isOverdue?: boolean;
   daysLate?: number;
+  isOverridden?: boolean;
+  onPressCalibrate?: () => void;
 }
 
 export const PhaseRing: React.FC<PhaseRingProps> = ({
@@ -18,6 +21,8 @@ export const PhaseRing: React.FC<PhaseRingProps> = ({
   daysUntilNextPeriod,
   isOverdue = false,
   daysLate = 0,
+  isOverridden = false,
+  onPressCalibrate,
 }) => {
   const metadata = PhaseHelper.getPhaseMetadata(phase);
 
@@ -54,11 +59,25 @@ export const PhaseRing: React.FC<PhaseRingProps> = ({
         </View>
       </View>
       <Text style={styles.subtitle}>{metadata.subtitle}</Text>
+      
       <View style={[styles.countdownBadge, isOverdue && { borderColor: Colors.light.warning, backgroundColor: '#FDF2F0' }]}>
         <Text style={[styles.countdownText, isOverdue && { color: Colors.light.warning }]}>
           {getCountdownLabel()}
         </Text>
       </View>
+
+      {onPressCalibrate && (
+        <TouchableOpacity
+          style={[styles.calibratePill, isOverridden && styles.calibratePillActive]}
+          onPress={onPressCalibrate}
+          activeOpacity={0.7}
+        >
+          <Sparkles size={12} color={isOverridden ? Colors.light.terracotta : Colors.light.textSecondary} />
+          <Text style={[styles.calibrateText, isOverridden && styles.calibrateTextActive]}>
+            {isOverridden ? `Calibrated: ${metadata.title}` : "Feels like a different phase? Adjust"}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -98,30 +117,55 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   phaseBadge: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.8,
-    color: Colors.light.textSecondary,
+    letterSpacing: 1,
+    color: Colors.light.textPrimary,
     marginTop: 2,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.light.textSecondary,
-    marginTop: 14,
-    fontWeight: '400',
+    marginTop: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   countdownBadge: {
     marginTop: 10,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: '#FAF8F5',
     borderWidth: 1,
     borderColor: '#E8E4DE',
   },
   countdownText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.light.textPrimary,
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+  },
+  calibratePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F7F5F2',
+    borderWidth: 1,
+    borderColor: '#E8E4DE',
+  },
+  calibratePillActive: {
+    backgroundColor: '#FBF0EC',
+    borderColor: '#F5D0C5',
+  },
+  calibrateText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+  },
+  calibrateTextActive: {
+    color: Colors.light.terracotta,
   },
 });

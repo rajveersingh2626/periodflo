@@ -1,14 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { DailyInsightResult } from '../../services/insights/nlgEngine';
-import { Sparkles, Activity, BookOpen } from 'lucide-react-native';
+import { Sparkles, Activity, BookOpen, SlidersHorizontal } from 'lucide-react-native';
 
 interface DailyInsightCardProps {
   insight: DailyInsightResult;
+  isOverridden?: boolean;
+  calibrationReason?: string;
+  onPressCalibrate?: () => void;
 }
 
-export const DailyInsightCard: React.FC<DailyInsightCardProps> = ({ insight }) => {
+export const DailyInsightCard: React.FC<DailyInsightCardProps> = ({
+  insight,
+  isOverridden = false,
+  calibrationReason,
+  onPressCalibrate,
+}) => {
   const { scientificEvidence } = insight;
 
   return (
@@ -18,12 +26,38 @@ export const DailyInsightCard: React.FC<DailyInsightCardProps> = ({ insight }) =
           <Sparkles size={18} color={Colors.light.terracotta} />
         </View>
         <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={styles.eyebrow}>PHYSIOLOGICAL INTELLIGENCE</Text>
+          <View style={styles.eyebrowRow}>
+            <Text style={styles.eyebrow}>PHYSIOLOGICAL INTELLIGENCE</Text>
+            {isOverridden && (
+              <View style={styles.calibratedTag}>
+                <Text style={styles.calibratedTagText}>CALIBRATED</Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.phaseTitle}>
             Day {insight.cycleDay} • {insight.phase.toUpperCase()} PHASE
           </Text>
         </View>
+
+        {onPressCalibrate && (
+          <TouchableOpacity
+            style={[styles.calibrateBtn, isOverridden && styles.calibrateBtnActive]}
+            onPress={onPressCalibrate}
+            activeOpacity={0.7}
+          >
+            <SlidersHorizontal
+              size={14}
+              color={isOverridden ? Colors.light.terracotta : Colors.light.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
+
+      {isOverridden && calibrationReason && (
+        <View style={styles.reasonBanner}>
+          <Text style={styles.reasonBannerText}>{calibrationReason}</Text>
+        </View>
+      )}
 
       <Text style={styles.narrative}>{insight.primaryNarrative}</Text>
 
@@ -273,5 +307,52 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#475569',
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  calibratedTag: {
+    backgroundColor: '#FBF0EC',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#F5D0C5',
+  },
+  calibratedTagText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.light.terracotta,
+    letterSpacing: 0.5,
+  },
+  calibrateBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FAF8F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E4DE',
+  },
+  calibrateBtnActive: {
+    backgroundColor: '#FBF0EC',
+    borderColor: '#F5D0C5',
+  },
+  reasonBanner: {
+    backgroundColor: '#FAF8F5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.light.terracotta,
+  },
+  reasonBannerText: {
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    fontWeight: '500',
   },
 });

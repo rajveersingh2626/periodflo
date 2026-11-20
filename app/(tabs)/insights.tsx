@@ -7,6 +7,8 @@ import { dbService } from '../../src/services/storage/db';
 import { PredictiveEngine } from '../../src/services/predictions/engine';
 import { InsightEngine, DailyInsightResult } from '../../src/services/insights/nlgEngine';
 import { SUHANI_CYCLES } from '../../src/services/storage/suhaniData';
+import { PhaseCalibrationModal } from '../../src/components/cycle/PhaseCalibrationModal';
+import { CyclePhase, DailyLog, CyclePrediction } from '../../src/types/cycle';
 
 export default function InsightsScreen() {
   const [insight, setInsight] = useState<DailyInsightResult>(() => {
@@ -21,6 +23,14 @@ export default function InsightsScreen() {
     });
   });
 
+  const [prediction, setPrediction] = useState<CyclePrediction>(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return PredictiveEngine.calculatePredictions(SUHANI_CYCLES, today);
+  });
+
+  const [dailyLog, setDailyLog] = useState<DailyLog | null>(null);
+  const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState(false);
+
   useEffect(() => {
     loadInsight();
   }, []);
@@ -33,17 +43,44 @@ export default function InsightsScreen() {
     }
     const today = new Date().toISOString().split('T')[0];
     const log = await dbService.getDailyLog(today);
-    const prediction = PredictiveEngine.calculatePredictions(cycles, today);
+    setDailyLog(log);
+
+    const calculatedPred = PredictiveEngine.calculatePredictions(cycles, today);
+    setPrediction(calculatedPred);
+
+    const effectivePhase: CyclePhase = log?.overridePhase || calculatedPred.currentPhase;
 
     const generated = InsightEngine.generateDailyInsight({
-      cycleDay: prediction.currentCycleDay,
-      phase: prediction.currentPhase,
+      cycleDay: calculatedPred.currentCycleDay,
+      phase: effectivePhase,
       symptoms: log?.symptoms || [],
       energyLevel: log?.energyLevel || 3,
       sleepQuality: log?.sleepQuality || 4,
     });
 
     setInsight(generated);
+  };
+
+  const handleSaveCalibration = async (phase: CyclePhase | null, reason?: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    let currentLog = await dbService.getDailyLog(today);
+    if (!currentLog) {
+      currentLog = {
+        id: `log-${today}`,
+        date: today,
+        symptoms: [],
+        moods: [],
+      };
+    }
+    if (phase) {
+      currentLog.overridePhase = phase;
+      currentLog.phaseOverrideReason = reason;
+    } else {
+      delete currentLog.overridePhase;
+      delete currentLog.phaseOverrideReason;
+    }
+    await dbService.saveDailyLog(currentLog);
+    await loadInsight();
   };
 
   return (
@@ -56,9 +93,24 @@ export default function InsightsScreen() {
           </Text>
         </View>
 
-        <DailyInsightCard insight={insight} />
+        <DailyInsightCard
+          insight={insight}
+          isOverridden={!!dailyLog?.overridePhase}
+          calibrationReason={dailyLog?.phaseOverrideReason}
+          onPressCalibrate={() => setIsCalibrationModalOpen(true)}
+        />
         <WellnessCards tips={insight.wellnessTips} />
       </ScrollView>
+
+      <PhaseCalibrationModal
+        visible={isCalibrationModalOpen}
+        currentPhase={prediction.currentPhase}
+        currentCycleDay={prediction.currentCycleDay}
+        initialOverriddenPhase={dailyLog?.overridePhase}
+        initialReason={dailyLog?.phaseOverrideReason}
+        onClose={() => setIsCalibrationModalOpen(false)}
+        onSaveCalibration={handleSaveCalibration}
+      />
     </SafeAreaView>
   );
 }
